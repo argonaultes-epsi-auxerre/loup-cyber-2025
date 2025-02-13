@@ -5,7 +5,7 @@ import admin_pb2
 from models import Base, Login
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
-
+from sqlalchemy.sql.expression import text
 
 class AdminServicer(admin_pb2_grpc.AdminServicer):
 
@@ -17,8 +17,9 @@ class AdminServicer(admin_pb2_grpc.AdminServicer):
     def CheckValidLogin(self, request, context):
         login = request.login
         session = Session(self.engine)
-        nblogins = session.query(Login).where(Login.login.is_(login)).count()
-        if nblogins > 0:
+        nblogins = session.execute(text(f"SELECT COUNT(*) FROM logins WHERE login = '{login}'"))
+
+        if nblogins.first()[0] > 0:
             return admin_pb2.Status(status = False)
         else:
             new_login = Login(login=login)
